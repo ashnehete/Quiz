@@ -39,10 +39,10 @@ attribute	  | bit_position
 Double Chance |     1
 Hint	      |     2
 */
-int lifeline = 1;
+int lifeline = 0;
 
 int done[10];
-char CATEGORIES[5][16] = {"1. ", "2. ", "3. ", "4. ", "5. "};
+char CATEGORIES[5][16] = {"1. Anime", "2. Geography", "3. History", "4. Science", "5. Sports"};
 
 struct Question {
     char question[32], option1[16], option2[16], option3[16], option4[16], hint[64];
@@ -133,15 +133,15 @@ void startGame() {
     renderLines(5, "");
     renderLines(1, "CATEGORIES");
     renderLines(2, "");
-    renderLines(1, "1.");
+    renderLines(1, CATEGORIES[0]);
     renderLines(1, "");
-    renderLines(1, "2.");
+    renderLines(1, CATEGORIES[1]);
     renderLines(1, "");
-    renderLines(1, "3.");
+    renderLines(1, CATEGORIES[2]);
     renderLines(1, "");
-    renderLines(1, "4.");
+    renderLines(1, CATEGORIES[3]);
     renderLines(1, "");
-    renderLines(1, "5.");
+    renderLines(1, CATEGORIES[4]);
     renderLines(1, "");
     lowerBorder();
     int choice = 0;
@@ -158,11 +158,14 @@ void showCategory(int category) {
     system("clear");
     upperBorder();
     renderLines(3, "");
+    renderLines(1, "Score - ");
+    renderLines(2, "");
     renderLines(1, CATEGORIES[category - 1]);
     renderLines(2, "");
     struct Question question = selectQuestion(category);
     renderQuestion(question);
     lowerBorder();
+    char choice = getch();
 }
 
 void renderQuestion(struct Question question) {
@@ -287,7 +290,7 @@ void renderInnerBorder(char content[], int count) {
 
 char* renderLines(int lines, char contents[]) {
     int length = BOX_LENGTH;
-    int contentsLength = strlen(contents);
+    int contentsLength = width(contents);
     int middle = length / 2;
     int start = middle - (contentsLength / 2);
     int end = start + contentsLength;
@@ -321,7 +324,8 @@ char* renderLines(int lines, char contents[]) {
                     length = length - inputLength + 1;
                     end = 0;
                 } else {
-                    printf("%c", contents[i - start]);
+                    printf("%s", contents);
+                    i = end - 1;
                 }
             }
             else printf(SPACE);
@@ -381,24 +385,21 @@ char getch(){
     return buf;
 }
 
-int width(char contents[]) {
-    int length = 0;
-    int tempLength = strlen(contents);
-    int temp = 0;
-    for(int i = 0; i < tempLength; i++) {
-        if(contents[i] < 0) {
-            if(temp == 2) {
-                length++;
-                temp = 0;
-            } else {
-                temp++;
-            }
-        }
-        else {
-            length++;
-        }
+int width(char s[]) {
+    int i = 0, j = 0;
+    while (s[i]) {
+        int n;
+       if      ((s[i] & 0x80) == 0)    n = 1;
+       else if ((s[i] & 0xE0) == 0xC0) n = 2;
+       else if ((s[i] & 0xF0) == 0xE0) n = 3;
+       else if ((s[i] & 0xF8) == 0xF0) n = 4;
+
+       //strike-through specific
+       if(s[i+1] == -52 && s[i+2] == -74) n = 3;
+      j++;
+      i += n;
     }
-    return length;
+    return j;
 }
 
 //Bit methods
