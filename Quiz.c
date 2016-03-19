@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <ctype.h>
 
 #define SIZE_OF(x) sizeof(x)/sizeof(x[0])
 
@@ -28,16 +29,18 @@
 #define BOX_LENGTH 180
 
 
-int amount = 0; //To store amount won
+char amount[5] = "00000"; //To store amount won
 
 /*
 Flag Field
 
 attribute	  | bit_position
 ----------------------------
-50/50	      |     0
-Double Chance |     1
-Hint	      |     2
+50/50	      |     0   (50/50 lifeline used if 1)
+Double Chance |     1   (Double Chance lifeline used if 1)
+Hint	      |     2   (Hint lifeline used if 1)
+Show Hint     |     3   (Show Hint for this question if 1)
+This Double   |     4   (Double Chance for this question if 1)
 */
 int lifeline = 0;
 
@@ -46,7 +49,7 @@ char CATEGORIES[5][16] = {"1. Anime", "2. Geography", "3. History", "4. Science"
 
 struct Question {
     char question[32], option1[16], option2[16], option3[16], option4[16], hint[64];
-    int answer;
+    char answer;
 } question;
 
 
@@ -55,7 +58,7 @@ void upperBorder();
 void lowerBorder();
 void welcome();
 void renderInnerBorder(char[], int);
-char* renderLines(int,char[]);
+char * renderLines(int,char[]);
 void nextQuestion();
 void startGame();
 void rules();
@@ -64,6 +67,7 @@ void invalidInput();
 void showCategory(int);
 void renderQuestion(struct Question);
 struct Question selectQuestion(int);
+void wrongAnswer();
 int isDone(int);
 
 
@@ -71,9 +75,9 @@ char getch();
 int width(char[]);
 
 //bit methods
-void setBit(int*, int);
-void clearBit(int*, int);
-void toggleBit(int*, int);
+void setBit(int *, int);
+void clearBit(int *, int);
+void toggleBit(int *, int);
 int isSet(int, int);
 
 int main(int argc, char const *argv[]) {
@@ -81,7 +85,6 @@ int main(int argc, char const *argv[]) {
     for(int i = 0; i < 10; i++) {
         done[i] = 0;
     }
-
     showCategory(1);
     return 0;
 }
@@ -155,17 +158,56 @@ void startGame() {
 }
 
 void showCategory(int category) {
+    do {
+        struct Question question = selectQuestion(category);
+
+        start:
+        system("clear");
+        char score[] = "Score - ";
+        strcat(score, amount);
+        upperBorder();
+        renderLines(3, "");
+        renderLines(1, score);
+        renderLines(2, "");
+        renderLines(1, CATEGORIES[category - 1]);
+        renderLines(2, "");
+        renderQuestion(question);
+        lowerBorder();
+
+        char choice;
+        again:
+        choice = getch();
+        choice = toupper(choice);
+        switch(choice) {
+            case 'A': case 'B': case 'C': case 'D':
+            if(choice == question.answer) continue;
+            else goto wrong;
+            break;
+
+            case '1':
+            if(isSet(lifeline, 0)) goto again;
+            toggleBit(&lifeline, 0);
+            toggleBit(&lifeline, 3);
+            goto start;
+            break;
+
+            case '2':
+            if(isSet(lifeline, 1)) goto again;
+            break;
+
+            case '3':
+            if(isSet(lifeline, 2)) goto again;
+            break;
+
+            default:
+            break;
+        }
+    } while(1);
+    wrong:
     system("clear");
     upperBorder();
-    renderLines(3, "");
-    renderLines(1, "Score - ");
-    renderLines(2, "");
-    renderLines(1, CATEGORIES[category - 1]);
-    renderLines(2, "");
-    struct Question question = selectQuestion(category);
-    renderQuestion(question);
+    renderLines(5, "");
     lowerBorder();
-    char choice = getch();
 }
 
 void renderQuestion(struct Question question) {
@@ -173,6 +215,15 @@ void renderQuestion(struct Question question) {
     renderLines(1, question.question);
     renderInnerBorder(LOWER_HALF_BLOCK, 80);
     renderLines(2, "");
+
+    //Show Hint
+    if(isSet(lifeline, 3)) {
+        char hint[] = "Hint: ";
+        strcat(hint, question.hint);
+        renderLines(1, hint);
+        renderLines(2, "");
+        toggleBit(&lifeline, 3);
+    }
 
     renderInnerBorder(DOUBLE_DASH, 40);
     renderLines(1, "");
@@ -207,6 +258,7 @@ void renderQuestion(struct Question question) {
     renderInnerBorder(DOUBLE_DASH, 40);
     renderLines(1, lifelineStr);
     renderInnerBorder(DOUBLE_DASH, 40);
+    renderLines(2, "");
 }
 
 struct Question selectQuestion(int category) {
@@ -229,7 +281,7 @@ struct Question selectQuestion(int category) {
     if (fp!=NULL)
     {
         //scanning into struct object
-        fscanf(fp,"%s%s%s%s%s%s%d", question.question, question.option1, question.option2, question.option3, question.option4, question.hint, &question.answer);
+        fscanf(fp,"%s%s%s%s%s%s%s", question.question, question.option1, question.option2, question.option3, question.option4, question.hint, &question.answer);
         fclose (fp);
     }
     return question;
@@ -260,6 +312,13 @@ void highScores() {
 }
 
 void invalidInput() {
+    system("clear");
+    upperBorder();
+    renderLines(5, "");
+    lowerBorder();
+}
+
+void wrongAnswer() {
     system("clear");
     upperBorder();
     renderLines(5, "");
