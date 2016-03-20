@@ -184,19 +184,34 @@ void showCategory(int category) {
             else goto wrong;
             break;
 
-            case '1':
-            if(isSet(lifeline, 0)) goto again;
-            toggleBit(&lifeline, 0);
+            //Hint
+            case '3':
+            if(isSet(lifeline, 2)) goto again;
+            toggleBit(&lifeline, 2);
             toggleBit(&lifeline, 3);
             goto start;
             break;
 
+            //Double Chance
             case '2':
             if(isSet(lifeline, 1)) goto again;
             break;
 
-            case '3':
-            if(isSet(lifeline, 2)) goto again;
+            //50/50
+            case '1':
+            if(isSet(lifeline, 0)) goto again;
+            toggleBit(&lifeline, 0);
+            srand(time(NULL));
+
+            int one, two;
+            while((one = (rand() % 4) + 1) == (question.answer - 64));
+            while((two = (rand() % 4) + 1) == one && two == (question.answer - 64));
+
+            if (one == 1 || two == 1) question.option1[0] = '\0';
+            if (one == 2 || two == 2) question.option2[0] = '\0';
+            if (one == 3 || two == 3) question.option3[0] = '\0';
+            if (one == 4 || two == 4) question.option4[0] = '\0';
+            goto start;
             break;
 
             default:
@@ -268,7 +283,7 @@ struct Question selectQuestion(int category) {
     do {
         number = (rand() % 25) + 1;
     } while(!isDone(number));
-    number = 1;//temporary
+    number = (rand() % 2) + 1;//temporary
 
     //creating file path from category and random number
     char path[16];
@@ -460,6 +475,11 @@ int width(char s[]) {
     }
     return j;
 }
+
+
+
+
+
 
 //Bit methods
 void setBit(int * val, int bit_position) { * val = * val | (1 << bit_position); }
