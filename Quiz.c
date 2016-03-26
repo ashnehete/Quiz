@@ -40,7 +40,8 @@ attribute	  | bit_position
 Double Chance |     1   (Double Chance lifeline used if 1)
 Hint	      |     2   (Hint lifeline used if 1)
 Show Hint     |     3   (Show Hint for this question if 1)
-This Double   |     4   (Double Chance for this question if 1)
+isFirstChance |     4   (First Chance for this question if 1)
+isSecondChance|     5   (Second Chance for this question if 1)
 */
 int lifeline = 0;
 
@@ -180,8 +181,20 @@ void showCategory(int category) {
         choice = toupper(choice);
         switch(choice) {
             case 'A': case 'B': case 'C': case 'D':
-            if(choice == question.answer) continue;
-            else goto wrong;
+            if(choice == question.answer) {
+                // TODO: Amount addition
+                clearBit(&lifeline, 3); //Turning off hint
+                continue;
+            }
+            else {
+                if(isSet(lifeline, 4)) {
+                    toggleBit(&lifeline, 4); // Turning off 1st chance
+                    toggleBit(&lifeline, 5); // Turning on 2nd chance
+                        goto again;
+                    }
+                else
+                    goto wrong;
+            }
             break;
 
             //Hint
@@ -195,6 +208,9 @@ void showCategory(int category) {
             //Double Chance
             case '2':
             if(isSet(lifeline, 1)) goto again;
+            toggleBit(&lifeline, 1);
+            toggleBit(&lifeline, 4);
+            goto start;
             break;
 
             //50/50
@@ -237,7 +253,15 @@ void renderQuestion(struct Question question) {
         strcat(hint, question.hint);
         renderLines(1, hint);
         renderLines(2, "");
-        toggleBit(&lifeline, 3);
+    }
+    if(isSet(lifeline, 4)) {
+        renderLines(1, "First chance");
+        renderLines(2, "");
+    }
+    if(isSet(lifeline, 5)) {
+        renderLines(1, "Second chance");
+        renderLines(2, "");
+        toggleBit(&lifeline, 5);
     }
 
     renderInnerBorder(DOUBLE_DASH, 40);
@@ -267,7 +291,7 @@ void renderQuestion(struct Question question) {
 
     char lifelineStr[64] = "";
     strcat(lifelineStr, ((isSet(lifeline, 0)) ? "1̶.̶ ̶5̶0̶/̶5̶0̶     " : "1. 50/50     "));
-    strcat(lifelineStr, ((isSet(lifeline, 1)) ? "2̶.̶ ̶D̶o̶u̶b̶l̶e̶ ̶C̶h̶a̶n̶c̶e̶     " : "2.Double Chance     "));
+    strcat(lifelineStr, ((isSet(lifeline, 1)) ? "2̶.̶ ̶D̶o̶u̶b̶l̶e̶ ̶C̶h̶a̶n̶c̶e̶    " : "2. Double Chance    "));
     strcat(lifelineStr, ((isSet(lifeline, 2)) ? "3̶.̶ ̶H̶i̶n̶t̶" : "3. Hint"));
 
     renderInnerBorder(DOUBLE_DASH, 40);
