@@ -184,13 +184,15 @@ void showCategory(int category) {
             if(choice == question.answer) {
                 // TODO: Amount addition
                 clearBit(&lifeline, 3); //Turning off hint
+                clearBit(&lifeline, 4);
+                clearBit(&lifeline, 5);
                 continue;
             }
             else {
                 if(isSet(lifeline, 4)) {
                     toggleBit(&lifeline, 4); // Turning off 1st chance
                     toggleBit(&lifeline, 5); // Turning on 2nd chance
-                        goto again;
+                        goto start;
                     }
                 else
                     goto wrong;
@@ -221,7 +223,7 @@ void showCategory(int category) {
 
             int one, two;
             while((one = (rand() % 4) + 1) == (question.answer - 64));
-            while((two = (rand() % 4) + 1) == one && two == (question.answer - 64));
+            while((two = (rand() % 4) + 1) == one || two == (question.answer - 64));
 
             if (one == 1 || two == 1) question.option1[0] = '\0';
             if (one == 2 || two == 2) question.option2[0] = '\0';
@@ -231,6 +233,7 @@ void showCategory(int category) {
             break;
 
             default:
+            goto again;
             break;
         }
     } while(1);
