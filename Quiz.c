@@ -8,28 +8,32 @@
 
 #define SIZE_OF(x) sizeof(x)/sizeof(x[0])
 
+// Unicode Characters
 #define FULL_BLOCK "█"
 #define SPACE " "
 #define RIGHT_HALF_BLOCK "▐"
 #define LEFT_HALF_BLOCK "▌"
 #define UPPER_HALF_BLOCK "▀"
 #define LOWER_HALF_BLOCK "▄"
-
+#define PIPE "╼"
 #define DARK_SHADE "▓"
 #define MEDIUM_SHADE "▒"
 #define LIGHT_SHADE "░"
-
-#define UPPER_LEFT "▛"
-#define UPPER_RIGHT "▜"
-#define LOWER_LEFT "▙"
-#define LOWER_RIGHT "▟"
-
 #define DOUBLE_DASH "═"
 
 #define BOX_LENGTH 180
 
 
-char amount[5] = "00000"; //To store amount won
+
+
+
+
+
+
+
+
+
+int score = 1; // because at least 1 :P
 
 /*
 Flag Field
@@ -53,6 +57,25 @@ struct Question {
     char answer;
 } question;
 
+struct HighScore {
+    char name[16];
+    int score;
+} highscores [10];
+
+char * name = "ASH"; //default
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void box();
 void upperBorder();
@@ -64,6 +87,8 @@ void nextQuestion();
 void startGame();
 void rules();
 void highScores();
+void loadHighScores();
+int insertHighScore(struct HighScore);
 void invalidInput();
 void showCategory(int);
 void renderQuestion(struct Question);
@@ -87,6 +112,7 @@ int main(int argc, char const *argv[]) {
         done[i] = 0;
     }
     showCategory(1);
+    //highScores();
     return 0;
 }
 
@@ -97,7 +123,7 @@ void welcome() {
     renderLines(1, "WELCOME!");
     renderLines(1, "");
     renderLines(1, "ENTER YOUR NAME:-");
-    char *name = renderLines(1, "getch");
+    name = renderLines(1, "getch");
     renderLines(3, "");
     renderLines(1, "1. START GAME");
     renderLines(1, "");
@@ -125,6 +151,7 @@ void welcome() {
                 break;
 
             case 4:
+                system("clear");
                 return;
                 break;
         }
@@ -161,28 +188,29 @@ void startGame() {
 void showCategory(int category) {
     do {
         struct Question question = selectQuestion(category);
+        char choice;
 
         start:
         system("clear");
-        char score[] = "Score - ";
-        strcat(score, amount);
+        char tempScore[16];
+        snprintf(tempScore, 16, "Score - %d", score);
+
         upperBorder();
         renderLines(3, "");
-        renderLines(1, score);
+        renderLines(1, tempScore);
         renderLines(2, "");
         renderLines(1, CATEGORIES[category - 1]);
         renderLines(2, "");
         renderQuestion(question);
         lowerBorder();
 
-        char choice;
         again:
         choice = getch();
         choice = toupper(choice);
         switch(choice) {
             case 'A': case 'B': case 'C': case 'D':
             if(choice == question.answer) {
-                // TODO: Amount addition
+                score *=  2;
                 clearBit(&lifeline, 3); //Turning off hint
                 clearBit(&lifeline, 4);
                 clearBit(&lifeline, 5);
@@ -190,35 +218,36 @@ void showCategory(int category) {
             }
             else {
                 if(isSet(lifeline, 4)) {
-                    toggleBit(&lifeline, 4); // Turning off 1st chance
-                    toggleBit(&lifeline, 5); // Turning on 2nd chance
+                    clearBit(&lifeline, 4); // Turning off 1st chance
+                    setBit(&lifeline, 5); // Turning on 2nd chance
                         goto start;
                     }
                 else
-                    goto wrong;
+                    wrongAnswer();
+                    return;
             }
             break;
 
             //Hint
             case '3':
             if(isSet(lifeline, 2)) goto again;
-            toggleBit(&lifeline, 2);
-            toggleBit(&lifeline, 3);
+            setBit(&lifeline, 2);
+            setBit(&lifeline, 3);
             goto start;
             break;
 
             //Double Chance
             case '2':
             if(isSet(lifeline, 1)) goto again;
-            toggleBit(&lifeline, 1);
-            toggleBit(&lifeline, 4);
+            setBit(&lifeline, 1);
+            setBit(&lifeline, 4);
             goto start;
             break;
 
             //50/50
             case '1':
             if(isSet(lifeline, 0)) goto again;
-            toggleBit(&lifeline, 0);
+            setBit(&lifeline, 0);
             srand(time(NULL));
 
             int one, two;
@@ -237,11 +266,6 @@ void showCategory(int category) {
             break;
         }
     } while(1);
-    wrong:
-    system("clear");
-    upperBorder();
-    renderLines(5, "");
-    lowerBorder();
 }
 
 void renderQuestion(struct Question question) {
@@ -319,7 +343,6 @@ struct Question selectQuestion(int category) {
     //reading from file
     FILE *fp;
     fp = fopen (path,"r");
-    char buff[255];
     if (fp!=NULL)
     {
         //scanning into struct object
@@ -349,8 +372,39 @@ void rules() {
 void highScores() {
     system("clear");
     upperBorder();
-    renderLines(5, "");
+    renderLines(2, "");
+    renderInnerBorder(DOUBLE_DASH, 12);
+    renderLines(1, "HIGHSCORES");
+    renderInnerBorder(DOUBLE_DASH, 12);
+    renderLines(2, "");
+    loadHighScores();
+    for (int i = 0; highscores[i].score != 0; i++) {
+        renderInnerBorder(PIPE, 16);
+        char temp[32];
+        snprintf(temp, 32, "%s %d", highscores[i].name, highscores[i].score);
+        renderLines(1, temp);
+
+    }
+    renderInnerBorder(PIPE, 16);
+    renderLines(4, "");
+    renderLines(1, "Press any key to continue...");
     lowerBorder();
+    getch();
+    welcome();
+}
+
+void loadHighScores() {
+    int i = 0;
+    FILE *fp;
+    fp = fopen ("res/highscores.txt","r");
+    if (fp!=NULL)
+    {
+        struct HighScore temp;
+        while (fscanf(fp, "%s%d", temp.name, &temp.score) != EOF) {
+            highscores[i++] = temp;
+        }
+        fclose(fp);
+    }
 }
 
 void invalidInput() {
@@ -360,12 +414,78 @@ void invalidInput() {
     lowerBorder();
 }
 
+
+
+int insertHighScore(struct HighScore hs) {
+    loadHighScores();
+
+    //Inserting in sorted array
+    int i = 10;
+    while (i-- > 0 && highscores[i-1].score < hs.score) {
+        highscores[i] = highscores[i-1];
+    }
+    highscores[i] = hs;
+}
+
+
+
+
+
+
+
+
 void wrongAnswer() {
     system("clear");
+
+    char tempName[32];
+    snprintf(tempName, 32, "Name - %s", name);
+    char tempScore[32];
+    snprintf(tempScore, 32, "Score - %d", score);
+
+    struct HighScore tempHS = {name, score}
+    int flag = insertHighScore(tempHS);
+
     upperBorder();
     renderLines(5, "");
+    renderInnerBorder(DARK_SHADE, 16);
+    renderInnerBorder("▓▓ GAME OVER! ▓▓", 1);
+    renderInnerBorder(DARK_SHADE, 16);
+    renderLines(2, "");
+    if(1) {
+        renderInnerBorder(LIGHT_SHADE, 16);
+        renderInnerBorder("░░ HIGH SCORE ░░", 1);
+        renderInnerBorder(LIGHT_SHADE, 16);
+        renderLines(2, "");
+    }
+    renderInnerBorder(PIPE, 16);
+    renderLines(1, "");
+    renderLines(1, tempName);
+    renderLines(1, "");
+    renderInnerBorder(PIPE, 16);
+    renderLines(1, "");
+    renderLines(1, tempScore);
+    renderLines(1, "");
+    renderInnerBorder(PIPE, 16);
+    renderLines(3, "");
+    renderLines(1, "Press any key to continue...");
     lowerBorder();
+
+    getch();
+    welcome();
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //renderLines cannot render in unicode
 void renderInnerBorder(char content[], int count) {
@@ -396,7 +516,7 @@ char* renderLines(int lines, char contents[]) {
     int start = middle - (contentsLength / 2);
     int end = start + contentsLength;
     char *input;
-    char temp[20];
+    char temp[16];
     int i,j;
 
     for(j = 0; j < lines; j++) {
