@@ -50,10 +50,10 @@ isSecondChance|     5   (Second Chance for this question if 1)
 int lifeline = 0;
 
 int done[10];
-char CATEGORIES[5][16] = {"1. Anime", "2. Geography", "3. History", "4. Science", "5. Sports"};
+char CATEGORIES[5][16] = {"1. Anime", "2. Bollywood","3. Geography", "4. History", "5. Sports"};
 
 struct Question {
-    char question[32], option1[16], option2[16], option3[16], option4[16], hint[64];
+    char question[64], option1[64], option2[64], option3[64], option4[64], hint[64];
     char answer;
 } question;
 

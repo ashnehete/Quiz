@@ -1,0 +1,7 @@
+What is the largest city in Canada?
+A.Ottawa
+B.Victoria
+C.Quebec City
+D.Toronto
+Ottawa is the capital of Canada
+D

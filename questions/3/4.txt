@@ -1,0 +1,7 @@
+What is the capital city of Australia ?
+A.Canberra
+B.Melbourne
+C.Sydney
+D.Adelaide
+Nahi, Sydney nahi hai
+A

@@ -1,0 +1,7 @@
+Which of the following is not a kharif crop?
+A.Jute
+B.Maize
+C.Mustard
+D.Rice
+Computerji doesn't know 'kharif'
+C
