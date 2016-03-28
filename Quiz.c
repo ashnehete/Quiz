@@ -62,7 +62,7 @@ struct HighScore {
     int score;
 } highscores [10];
 
-char * name = "ASH"; //default
+char name[16] = ""; //default
 
 
 
@@ -111,8 +111,9 @@ int main(int argc, char const *argv[]) {
     for(int i = 0; i < 10; i++) {
         done[i] = 0;
     }
-    showCategory(1);
+    //showCategory(1);
     //highScores();
+    welcome();
     return 0;
 }
 
@@ -123,7 +124,11 @@ void welcome() {
     renderLines(1, "WELCOME!");
     renderLines(1, "");
     renderLines(1, "ENTER YOUR NAME:-");
-    name = renderLines(1, "getch");
+
+    //saving name
+    char * temp = renderLines(1, "getch");
+    for(int i = 0; i < width(temp); i++) { name[i] = *(temp+i); }
+
     renderLines(3, "");
     renderLines(1, "1. START GAME");
     renderLines(1, "");
@@ -419,12 +424,25 @@ void invalidInput() {
 int insertHighScore(struct HighScore hs) {
     loadHighScores();
 
-    //Inserting in sorted array
-    int i = 10;
-    while (i-- > 0 && highscores[i-1].score < hs.score) {
+    int i = 9;
+    while (i > 0 && highscores[i-1].score < hs.score) {
         highscores[i] = highscores[i-1];
+        i--;
     }
     highscores[i] = hs;
+
+    //writing
+    FILE *fp;
+    fp = fopen ("res/highscores.txt","w");
+    if (fp!=NULL)
+    {
+        i = 0;
+        while(highscores[i].score != 0) {
+            fprintf(fp, "%s %d\n", highscores[i].name, highscores[i].score);
+            i++;
+        }
+        fclose (fp);
+    }
 }
 
 
@@ -442,7 +460,9 @@ void wrongAnswer() {
     char tempScore[32];
     snprintf(tempScore, 32, "Score - %d", score);
 
-    struct HighScore tempHS = {name, score}
+    struct HighScore tempHS;
+    strcpy(tempHS.name, name);
+    tempHS.score = score;
     int flag = insertHighScore(tempHS);
 
     upperBorder();
