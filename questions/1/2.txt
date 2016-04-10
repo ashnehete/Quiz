@@ -1,7 +1,7 @@
-Question2?
-A.Option1
-B.Option2
-C.Option3
-D.Option4
-Hint
-B
+Where is Capsule Corp located?
+A.Capsule City
+B.East City
+C.West City
+D.Next to Goku's house
+Name based on directon
+C

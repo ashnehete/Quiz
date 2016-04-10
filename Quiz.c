@@ -49,11 +49,11 @@ isSecondChance|     5   (Second Chance for this question if 1)
 */
 int lifeline = 0;
 
-int done[10];
-char CATEGORIES[5][16] = {"1. Anime", "2. Bollywood","3. Geography", "4. History", "5. Sports"};
+int done[25];
+char CATEGORIES[4][16] = {"1. Anime", "2. Bollywood","3. Geography", "4. History"};
 
 struct Question {
-    char question[64], option1[64], option2[64], option3[64], option4[64], hint[64];
+    char question[128], option1[128], option2[128], option3[128], option4[128], hint[128];
     char answer;
 } question;
 
@@ -111,14 +111,15 @@ int main(int argc, char const *argv[]) {
     for(int i = 0; i < 10; i++) {
         done[i] = 0;
     }
-    //showCategory(1);
-    //highScores();
+    // showCategory(2);
+    // highScores();
     welcome();
     return 0;
 }
 
 void welcome() {
     system("clear");
+    lifeline = 0;
     upperBorder();
     renderLines(5, "");
     renderLines(1, "WELCOME!");
@@ -176,8 +177,6 @@ void startGame() {
     renderLines(1, CATEGORIES[2]);
     renderLines(1, "");
     renderLines(1, CATEGORIES[3]);
-    renderLines(1, "");
-    renderLines(1, CATEGORIES[4]);
     renderLines(1, "");
     lowerBorder();
     int choice = 0;
@@ -321,7 +320,7 @@ void renderQuestion(struct Question question) {
     renderInnerBorder(DARK_SHADE, 12);
 
 
-    char lifelineStr[64] = "";
+    char lifelineStr[128] = "";
     strcat(lifelineStr, ((isSet(lifeline, 0)) ? "1̶.̶ ̶5̶0̶/̶5̶0̶     " : "1. 50/50     "));
     strcat(lifelineStr, ((isSet(lifeline, 1)) ? "2̶.̶ ̶D̶o̶u̶b̶l̶e̶ ̶C̶h̶a̶n̶c̶e̶    " : "2. Double Chance    "));
     strcat(lifelineStr, ((isSet(lifeline, 2)) ? "3̶.̶ ̶H̶i̶n̶t̶" : "3. Hint"));
@@ -339,10 +338,10 @@ struct Question selectQuestion(int category) {
     do {
         number = (rand() % 25) + 1;
     } while(!isDone(number));
-    number = (rand() % 2) + 1;//temporary
+    // number = (rand() % 2) + 1;//temporary
 
     //creating file path from category and random number
-    char path[16];
+    char path[32];
     snprintf(path, 32, "questions/%d/%d.txt", category, number);
 
     //reading from file
@@ -351,8 +350,22 @@ struct Question selectQuestion(int category) {
     if (fp!=NULL)
     {
         //scanning into struct object
-        fscanf(fp,"%s%s%s%s%s%s%s", question.question, question.option1, question.option2, question.option3, question.option4, question.hint, &question.answer);
-        fclose (fp);
+        fgets(question.question, 128, fp);
+        fgets(question.option1, 128, fp);
+        fgets(question.option2, 128, fp);
+        fgets(question.option3, 128, fp);
+        fgets(question.option4, 128, fp);
+        fgets(question.hint, 128, fp);
+        fscanf(fp, "%c", &question.answer);
+        fclose(fp);
+    }
+    for (int i = 0; i < 128; i++) {
+        if(question.question[i] == 13 || question.question[i] == 10) question.question[i] = 0;
+        if(question.option4[i] == 13 || question.option4[i] == 10) question.option4[i] = 0;
+        if(question.option3[i] == 13 || question.option3[i] == 10) question.option3[i] = 0;
+        if(question.option2[i] == 13 || question.option2[i] == 10) question.option2[i] = 0;
+        if(question.option1[i] == 13 || question.option1[i] == 10) question.option1[i] = 0;
+        if(question.hint[i] == 13 || question.hint[i] == 10) question.hint[i] = 0;
     }
     return question;
 }
@@ -411,14 +424,6 @@ void loadHighScores() {
         fclose(fp);
     }
 }
-
-void invalidInput() {
-    system("clear");
-    upperBorder();
-    renderLines(5, "");
-    lowerBorder();
-}
-
 
 
 int insertHighScore(struct HighScore hs) {
@@ -549,12 +554,12 @@ char* renderLines(int lines, char contents[]) {
 
                     while(1) {
                         char t = getch();
-                        if(t == 10) break;
+                        if((t == 10) || (t == 32)) break;
                         else if(t == 127) {
                             printf("\b \b");
                             count--;
                             continue;
-                        } else if((t >= 65 && t <=90) || (t >= 97 && t <= 122) || (t == 32)) {
+                        } else if((t >= 65 && t <=90) || (t >= 97 && t <= 122)) {
                             temp[count++] = t;
                             printf("%c", t);
                         }
