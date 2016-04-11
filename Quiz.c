@@ -6,9 +6,10 @@
 #include <time.h>
 #include <ctype.h>
 
-#define SIZE_OF(x) sizeof(x)/sizeof(x[0])
-
-// Unicode Characters
+/*----------------------------------
+ * Unicode characters declarations
+ *----------------------------------
+ */
 #define FULL_BLOCK "█"
 #define SPACE " "
 #define RIGHT_HALF_BLOCK "▐"
@@ -23,20 +24,29 @@
 
 #define BOX_LENGTH 180
 
+/*----------------------------------
+ * Global variable declarations
+ *----------------------------------
+ */
+ struct Question {
+     char question[128], option1[128], option2[128], option3[128], option4[128], hint[128];
+     char answer;
+ } question;
 
-
-
-
-
-
-
-
-
+ struct HighScore {
+     char name[16];
+     int score;
+ } highscores [10];
 
 int score = 1; // because at least 1 :P
+int done[25];
+char CATEGORIES[4][16] = {"1. Anime", "2. Bollywood","3. Geography", "4. History"};
 
+char name[16] = ""; //default
+
+int lifeline = 0;
 /*
-Flag Field
+Lifeline Flag Field
 
 attribute	  | bit_position
 ----------------------------
@@ -47,36 +57,11 @@ Show Hint     |     3   (Show Hint for this question if 1)
 isFirstChance |     4   (First Chance for this question if 1)
 isSecondChance|     5   (Second Chance for this question if 1)
 */
-int lifeline = 0;
 
-int done[25];
-char CATEGORIES[4][16] = {"1. Anime", "2. Bollywood","3. Geography", "4. History"};
-
-struct Question {
-    char question[128], option1[128], option2[128], option3[128], option4[128], hint[128];
-    char answer;
-} question;
-
-struct HighScore {
-    char name[16];
-    int score;
-} highscores [10];
-
-char name[16] = ""; //default
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/*----------------------------------
+ * Function declarations
+ *----------------------------------
+ */
 void box();
 void upperBorder();
 void lowerBorder();
@@ -95,28 +80,31 @@ void renderQuestion(struct Question);
 struct Question selectQuestion(int);
 void wrongAnswer();
 int isDone(int);
-
-
 char getch();
 int width(char[]);
-
 //bit methods
 void setBit(int *, int);
 void clearBit(int *, int);
 void toggleBit(int *, int);
 int isSet(int, int);
 
+/*----------------------------------
+ * Main method
+ *----------------------------------
+ */
 int main(int argc, char const *argv[]) {
     //initialise done to 0
     for(int i = 0; i < 10; i++) {
         done[i] = 0;
     }
-    // showCategory(2);
-    // highScores();
     welcome();
     return 0;
 }
 
+/**
+ * Shows the start screen.
+ * Input name and menu.
+ */
 void welcome() {
     system("clear");
     lifeline = 0;
@@ -164,6 +152,13 @@ void welcome() {
     } while(choice < 1 || choice > 4);
 }
 
+/**
+ * Shows category menu to choose from.
+ * 1. Anime
+ * 2. Bollywood
+ * 3. Geography
+ * 4. History
+ */
 void startGame() {
     system("clear");
     upperBorder();
@@ -177,7 +172,7 @@ void startGame() {
     renderLines(1, CATEGORIES[2]);
     renderLines(1, "");
     renderLines(1, CATEGORIES[3]);
-    renderLines(1, "");
+    renderLines(5, "");
     lowerBorder();
     int choice = 0;
     while (1) {
@@ -189,12 +184,15 @@ void startGame() {
     showCategory(choice);
 }
 
+/**
+ * Shows questions from the selected category.
+ */
 void showCategory(int category) {
-    do {
+    do { /* Loop breaks when question is wrong. */
         struct Question question = selectQuestion(category);
         char choice;
 
-        start:
+        start: /* Show question again after choosing lifeline. */
         system("clear");
         char tempScore[16];
         snprintf(tempScore, 16, "Score - %d", score);
@@ -208,16 +206,16 @@ void showCategory(int category) {
         renderQuestion(question);
         lowerBorder();
 
-        again:
+        again: /* Take input again after illegal input. */
         choice = getch();
-        choice = toupper(choice);
+        choice = toupper(choice); // type safety
         switch(choice) {
             case 'A': case 'B': case 'C': case 'D':
             if(choice == question.answer) {
                 score *=  2;
-                clearBit(&lifeline, 3); //Turning off hint
-                clearBit(&lifeline, 4);
-                clearBit(&lifeline, 5);
+                clearBit(&lifeline, 3); // Turning off hint
+                clearBit(&lifeline, 4); // Turning off 1st chance
+                clearBit(&lifeline, 5); // Turning off 2nd chance
                 continue;
             }
             else {
@@ -232,7 +230,7 @@ void showCategory(int category) {
             }
             break;
 
-            //Hint
+            // Hint
             case '3':
             if(isSet(lifeline, 2)) goto again;
             setBit(&lifeline, 2);
@@ -240,7 +238,7 @@ void showCategory(int category) {
             goto start;
             break;
 
-            //Double Chance
+            // Double Chance
             case '2':
             if(isSet(lifeline, 1)) goto again;
             setBit(&lifeline, 1);
@@ -248,16 +246,18 @@ void showCategory(int category) {
             goto start;
             break;
 
-            //50/50
+            // 50/50
             case '1':
             if(isSet(lifeline, 0)) goto again;
             setBit(&lifeline, 0);
             srand(time(NULL));
 
+            // randomly select 2 options which do not include the answer and should be distinct
             int one, two;
             while((one = (rand() % 4) + 1) == (question.answer - 64));
             while((two = (rand() % 4) + 1) == one || two == (question.answer - 64));
 
+            // Making randomly choosen option empty
             if (one == 1 || two == 1) question.option1[0] = '\0';
             if (one == 2 || two == 2) question.option2[0] = '\0';
             if (one == 3 || two == 3) question.option3[0] = '\0';
@@ -272,29 +272,37 @@ void showCategory(int category) {
     } while(1);
 }
 
+/**
+ * Render the question, options and the lifelines.
+ *
+ * @params question Holds the question and options.
+ */
 void renderQuestion(struct Question question) {
     renderInnerBorder(UPPER_HALF_BLOCK, 80);
     renderLines(1, question.question);
     renderInnerBorder(LOWER_HALF_BLOCK, 80);
     renderLines(2, "");
 
-    //Show Hint
+    // Show Hint
     if(isSet(lifeline, 3)) {
         char hint[] = "Hint: ";
         strcat(hint, question.hint);
         renderLines(1, hint);
         renderLines(2, "");
     }
+    // Show 1st Chance
     if(isSet(lifeline, 4)) {
         renderLines(1, "First chance");
         renderLines(2, "");
     }
+    // Show 2nd Chance
     if(isSet(lifeline, 5)) {
         renderLines(1, "Second chance");
         renderLines(2, "");
         toggleBit(&lifeline, 5);
     }
 
+    // Show options
     renderInnerBorder(DOUBLE_DASH, 40);
     renderLines(1, "");
     renderLines(1, question.option1);
@@ -319,7 +327,6 @@ void renderQuestion(struct Question question) {
     renderInnerBorder("▓▓Lifeline▓▓", 1);
     renderInnerBorder(DARK_SHADE, 12);
 
-
     char lifelineStr[128] = "";
     strcat(lifelineStr, ((isSet(lifeline, 0)) ? "1̶.̶ ̶5̶0̶/̶5̶0̶     " : "1. 50/50     "));
     strcat(lifelineStr, ((isSet(lifeline, 1)) ? "2̶.̶ ̶D̶o̶u̶b̶l̶e̶ ̶C̶h̶a̶n̶c̶e̶    " : "2. Double Chance    "));
@@ -331,14 +338,19 @@ void renderQuestion(struct Question question) {
     renderLines(2, "");
 }
 
+/**
+ * Selects a question randomly and reads the data from the file and stores
+ * in global question variable.
+ *
+ * @params category The category of which the question will be from.
+ */
 struct Question selectQuestion(int category) {
     struct Question question;
     srand(time(NULL));
     int number;
     do {
         number = (rand() % 25) + 1;
-    } while(!isDone(number));
-    // number = (rand() % 2) + 1;//temporary
+    } while(!isDone(number)); // While the question is not repeated
 
     //creating file path from category and random number
     char path[32];
@@ -359,6 +371,8 @@ struct Question selectQuestion(int category) {
         fscanf(fp, "%c", &question.answer);
         fclose(fp);
     }
+
+    // Removing carriage return and new line from strings
     for (int i = 0; i < 128; i++) {
         if(question.question[i] == 13 || question.question[i] == 10) question.question[i] = 0;
         if(question.option4[i] == 13 || question.option4[i] == 10) question.option4[i] = 0;
@@ -370,7 +384,11 @@ struct Question selectQuestion(int category) {
     return question;
 }
 
-//checks whether question is done or not
+/**
+ * Checks whether this question is done or not.
+ *
+ * @params number The question number to be checked.
+ */
 int isDone(int number) {
     int i;
     for(i = 0; done[i] != 0; i++) {
@@ -380,13 +398,30 @@ int isDone(int number) {
     return 1;
 }
 
+/**
+ * Shows the rules of the game.
+ */
 void rules() {
     system("clear");
     upperBorder();
-    renderLines(5, "");
+    renderLines(3, "");
+    renderLines(1, "RULES");
+    renderLines(2, "");
+    renderLines(1, "1. Press A/B/C/D to select an option.");
+    renderLines(1, "2. Press 1/2/3 to select lifelines.");
+    renderLines(1, "3. Lifelines can only be used once in a game.");
+    renderLines(1, "4. High Scores are stored upto 10 highest ones.");
+    renderLines(3, "");
+    renderLines(1, "Press any key to continue");
+    renderLines(2, "");
     lowerBorder();
+    getch();
+    welcome();
 }
 
+/**
+ * Shows atmost 10 highscores.
+ */
 void highScores() {
     system("clear");
     upperBorder();
@@ -411,6 +446,9 @@ void highScores() {
     welcome();
 }
 
+/**
+ * Loads all highscores from file.
+ */
 void loadHighScores() {
     int i = 0;
     FILE *fp;
@@ -425,7 +463,9 @@ void loadHighScores() {
     }
 }
 
-
+/**
+ * Inserts new highscore in the file in the sorted position.
+ */
 int insertHighScore(struct HighScore hs) {
     loadHighScores();
 
@@ -450,13 +490,9 @@ int insertHighScore(struct HighScore hs) {
     }
 }
 
-
-
-
-
-
-
-
+/**
+ * Game over screen.
+ */
 void wrongAnswer() {
     system("clear");
 
@@ -499,20 +535,12 @@ void wrongAnswer() {
     welcome();
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-//renderLines cannot render in unicode
+/**
+ * To render unicode character lines.
+ *
+ * @params content The unicode character.
+ * @params count Number of times the char is repeated.
+ */
 void renderInnerBorder(char content[], int count) {
     int length = BOX_LENGTH;
     int contentLength = width(content);
@@ -534,6 +562,12 @@ void renderInnerBorder(char content[], int count) {
     printf("\n");
 }
 
+/**
+ * To render the lines in the UI.
+ *
+ * @params lines Number lines to be rendered.
+ * @params contents Print contents.
+ */
 char* renderLines(int lines, char contents[]) {
     int length = BOX_LENGTH;
     int contentsLength = width(contents);
@@ -549,6 +583,7 @@ char* renderLines(int lines, char contents[]) {
         for (i = 1; i < length - 1; i++) {
 
             if(i >= start && i < end) {
+                // if taking input (name)
                 if(contents == "getch") {
                     int count = 0;
 
@@ -569,7 +604,10 @@ char* renderLines(int lines, char contents[]) {
                     int inputLength = count;
                     length = length - inputLength + 1;
                     end = 0;
-                } else {
+                }
+
+                // Print contents
+                else {
                     printf("%s", contents);
                     i = end - 1;
                 }
@@ -582,6 +620,9 @@ char* renderLines(int lines, char contents[]) {
     return input;
 }
 
+/**
+ * Upper border of UI.
+ */
 void upperBorder() {
     printf(FULL_BLOCK);
     for (int i = 1; i < (BOX_LENGTH - 1); i++) {
@@ -591,6 +632,9 @@ void upperBorder() {
     printf("\n");
 }
 
+/**
+ * Lower Border of UI.
+ */
 void lowerBorder() {
     printf(FULL_BLOCK);
     for (int i = 1; i < (BOX_LENGTH - 1); i++) {
@@ -600,15 +644,9 @@ void lowerBorder() {
     //printf("\n");
 }
 
-
-
-
-
-
-
-
-
-
+/**
+ * gcc implementation for getch() without echo
+ */
 char getch(){
     char buf=0;
     struct termios old={0};
@@ -627,10 +665,14 @@ char getch(){
     old.c_lflag|=ECHO;
     if(tcsetattr(0, TCSADRAIN, &old)<0)
         perror ("tcsetattr ~ICANON");
-    //printf("%c\n",buf); No echo
     return buf;
 }
 
+/**
+ * Calculate length of string considering Unicode and strike-through text
+ *
+ * @params s String whose length is to be found
+ */
 int width(char s[]) {
     int i = 0, j = 0;
     while (s[i]) {
@@ -653,7 +695,9 @@ int width(char s[]) {
 
 
 
-//Bit methods
+/**
+ * Bit methods for manipulation lifeline flag field
+ */
 void setBit(int * val, int bit_position) { * val = * val | (1 << bit_position); }
 
 void clearBit(int * val, int bit_position) { * val = * val & ~(1 << bit_position); }
