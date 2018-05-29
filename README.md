@@ -2,7 +2,7 @@
 
 A Quiz game based in C Language.
 
-##Game Features
+## Game Features
 
 * 10 questions each round.
 * 100 questions from 4 categories in totality. (more coming soon!)
@@ -12,7 +12,7 @@ A Quiz game based in C Language.
     3. Hint
 * High Scores display.
 
-##How to Play
+## How to Play
 1. Start the game.
 2. Enter your name.
 3. Press key according to the menu :-
